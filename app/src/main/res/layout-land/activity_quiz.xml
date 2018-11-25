@@ -42,15 +42,22 @@
             android:id="@+id/prev_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:contentDescription="Next Button"
+            android:contentDescription="Prev Button"
             android:drawablePadding="4dp"
             android:src="@drawable/arrow_left" />
+
+        <Button
+            android:id="@+id/cheat_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|center_horizontal"
+            android:text="@string/cheat_button" />
 
         <ImageButton
             android:id="@+id/next_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:contentDescription="Prev Button"
+            android:contentDescription="Next Button"
             android:drawablePadding="4dp"
             android:src="@drawable/arrow_right" />
 

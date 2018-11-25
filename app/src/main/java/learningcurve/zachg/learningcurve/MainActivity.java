@@ -1,5 +1,7 @@
 package learningcurve.zachg.learningcurve;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -12,14 +14,21 @@ import android.widget.Toast;
 
 import static android.widget.Toast.makeText;
 
+// Wire Cheat Activity's Prev button to return to MainActivity
+// If that doesn't fix the True/False buttons, troubleshoot til they fixed
+// Maximum of three cheats, keeps track
+// Do not let screen rotation skip cheating
+
 public class MainActivity extends AppCompatActivity {
 
     public static final String TAG = "MainActivity";
     private static final String KEY_INDEX = "index";
+    private static final int REQUEST_CODE_CHEAT = 0;
 
     private Button mTrueButton;
     private Button mFalseButton;
     private ImageButton mNextButton;
+    private Button mCheatButton;
     private ImageButton mPrevButton;
     private TextView mQuestionTextView;
 
@@ -33,6 +42,7 @@ public class MainActivity extends AppCompatActivity {
 
     private int mCurrentIndex = 0;
     private int mCorrectCount = 0;
+    private boolean mIsCheater;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,12 +55,6 @@ public class MainActivity extends AppCompatActivity {
         }
 
         mQuestionTextView = (TextView) findViewById(R.id.question_text_view);
-        mQuestionTextView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                updateQuestion();
-            }
-        });
 
         mTrueButton = (Button) findViewById(R.id.true_button);
         mTrueButton.setOnClickListener(new View.OnClickListener() {
@@ -77,8 +81,19 @@ public class MainActivity extends AppCompatActivity {
                     restart();
                 } else {
                     mCurrentIndex = (mCurrentIndex + 1);
+                    mIsCheater = false;
                     updateQuestion();
                 }
+            }
+        });
+
+        mCheatButton = (Button)findViewById(R.id.cheat_button);
+        mCheatButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                boolean answerIsTrue = mQuestionBank[mCurrentIndex].isAnswerTrue();
+                Intent intent = CheatActivity.newIntent(MainActivity.this, answerIsTrue);
+                startActivityForResult(intent, REQUEST_CODE_CHEAT);
             }
         });
 
@@ -98,23 +113,41 @@ public class MainActivity extends AppCompatActivity {
         updateQuestion();
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (resultCode != Activity.RESULT_OK) {
+            return;
+        }
+
+        if (requestCode == REQUEST_CODE_CHEAT) {
+            if (data == null) {
+                return;
+            }
+            mIsCheater = CheatActivity.wasAnswerShown(data);
+        }
+    }
+
     private void checkAnswer (boolean userPressedTrue) {
         boolean answerIsTrue = mQuestionBank[mCurrentIndex].isAnswerTrue();
         int messageResId = 0;
-        if (mCurrentIndex < mQuestionBank.length - 1) {
-            if (userPressedTrue == answerIsTrue) {
-                messageResId = R.string.correct_toast;
-                mCorrectCount++;
-            } else {
-                messageResId = R.string.incorrect_toast;
-            }
-            Toast.makeText(this, messageResId, Toast.LENGTH_SHORT).show();
+        if (mIsCheater) {
+            messageResId = R.string.judgment_toast;
         } else {
-            calculateScore();
+            if (mCurrentIndex < mQuestionBank.length - 1) {
+                if (userPressedTrue == answerIsTrue) {
+                    messageResId = R.string.correct_toast;
+                    mCorrectCount++;
+                } else {
+                    messageResId = R.string.incorrect_toast;
+                }
+                Toast.makeText(this, messageResId, Toast.LENGTH_SHORT).show();
+            } else {
+                calculateScore();
+            }
+            mTrueButton.setEnabled(false);
+            mFalseButton.setEnabled(false);
+            mNextButton.setEnabled(true);
         }
-        mTrueButton.setEnabled(false);
-        mFalseButton.setEnabled(false);
-        mNextButton.setEnabled(true);
     }
 
     private void updateQuestion() {
@@ -130,7 +163,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void calculateScore() {
         int score = (mCorrectCount * 100)/mQuestionBank.length;
-        int messageResId = R.string.score_toast;
         Toast.makeText(this, "Your score is " + score + "%!", Toast.LENGTH_SHORT).show();
         mCorrectCount = 0;
     }
